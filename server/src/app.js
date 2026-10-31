@@ -6,10 +6,13 @@ import healthRoutes from "./routes/healthRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import structuredChatRoutes from "./routes/structuredChatRoutes.js";
+import agentRoutes from "./routes/agentRoutes.js";
+import approvalRoutes from "./routes/approvalRoutes.js";
 
 import errorHandler from "./middleware/errorMiddleware.js";
 import notFound from "./middleware/notFoundMiddleware.js";
 import requestLogger from "./middleware/requestLogger.js";
+
 
 const app = express();
 
@@ -24,6 +27,8 @@ app.use("/api/health", healthRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/chat", structuredChatRoutes);
+app.use("/api/agent", agentRoutes);
+app.use("/api/approvals", approvalRoutes);
 
 // Handle unknown routes
 app.use(notFound);
