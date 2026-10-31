@@ -1,12 +1,15 @@
+
 import express from "express";
 import cors from "cors";
+
 import healthRoutes from "./routes/healthRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import structuredChatRoutes from "./routes/structuredChatRoutes.js";
+
 import errorHandler from "./middleware/errorMiddleware.js";
 import notFound from "./middleware/notFoundMiddleware.js";
-import testRoutes from "./routes/testRoutes.js";
 import requestLogger from "./middleware/requestLogger.js";
-import chatRoutes from "./routes/chatRoutes.js";
-
 
 const app = express();
 
@@ -20,6 +23,7 @@ app.use(requestLogger);
 app.use("/api/health", healthRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/chat", structuredChatRoutes);
 
 // Handle unknown routes
 app.use(notFound);
