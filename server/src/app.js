@@ -5,6 +5,7 @@ import errorHandler from "./middleware/errorMiddleware.js";
 import notFound from "./middleware/notFoundMiddleware.js";
 import testRoutes from "./routes/testRoutes.js";
 import requestLogger from "./middleware/requestLogger.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(requestLogger);
 // Routes
 app.use("/api/health", healthRoutes);
 app.use("/api/test", testRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Handle unknown routes
 app.use(notFound);
