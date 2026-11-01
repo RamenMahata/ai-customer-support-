@@ -1,5 +1,6 @@
 
 import { generateToolCallResponse } from "./llmService.js";
+import { retrieveKnowledgeContext } from "./ragService.js";
 
 import {
   executeTool,
@@ -292,6 +293,7 @@ export const runAgent = async (
   {
     generateResponse = generateToolCallResponse,
     execute = executeTool,
+    retrieveKnowledge = retrieveKnowledgeContext,
     idempotencyKey,
     requestFingerprint,
   } = {}
@@ -304,33 +306,47 @@ export const runAgent = async (
     requestFingerprint,
   };
 
-  // Step 1: Ask the LLM whether a tool is needed.
+  // Step 1: Find the latest customer message.
+  const latestUserMessage = [...history]
+    .reverse()
+    .find((message) => message.role === "user");
+
+  if (!latestUserMessage?.content) {
+    throw new Error("No customer message found in conversation");
+  }
+
+  // Step 2: Retrieve relevant knowledge once.
+  const knowledgeContext = await retrieveKnowledge(
+    latestUserMessage.content
+  );
+
+  // Step 3: Ask the LLM whether a tool is needed.
   let response = validateAgentResponse(
-    await generateResponse(agentHistory)
+    await generateResponse(agentHistory, knowledgeContext)
   );
 
   let rounds = 0;
 
-  // Step 2: Continue while the LLM requests tools.
+  // Step 4: Continue while the LLM requests tools.
   while (response.toolCalls.length > 0) {
-    // Step 3: Prevent unlimited tool execution.
+    // Prevent unlimited tool execution.
     if (rounds >= MAX_TOOL_ROUNDS) {
       throw new Error(
         "Maximum tool execution rounds exceeded"
       );
     }
 
-    // Step 4: Add the assistant's original tool-call message.
+    // Add the assistant's original tool-call message.
     agentHistory.push(response.assistantMessage);
 
-    // Step 5: Execute tools using the safe scheduler.
+    // Execute tools using the safe scheduler.
     const toolResults = await executeToolCallsSafely(
       response.toolCalls,
       context,
       execute
     );
 
-    // Step 6: Add tool results to the conversation.
+    // Add tool results to the conversation.
     for (const toolResult of toolResults) {
       agentHistory.push({
         role: "tool",
@@ -341,13 +357,14 @@ export const runAgent = async (
 
     rounds++;
 
-    // Step 7: Ask the LLM what to do next.
+    // Ask the LLM what to do next.
+    // The same RAG context is retained across rounds.
     response = validateAgentResponse(
-      await generateResponse(agentHistory)
+      await generateResponse(agentHistory, knowledgeContext)
     );
   }
 
-  // Step 8: Validate final customer-facing response.
+  // Step 5: Validate final customer-facing response.
   if (
     typeof response.content !== "string" ||
     !response.content.trim()
